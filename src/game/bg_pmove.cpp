@@ -30,6 +30,21 @@ namespace ETJump
 	{
 		return pm->pmext->proneTime - pm->pmext->jumpTime == PRONE_JUMP_DELAY_TIME;
 	}
+
+
+	static void setPlayerPhaseMask()
+	{
+		// phase brushes always nonsolid for specs
+		if (pm->ps->pm_type == PM_SPECTATOR)
+		{
+			SETBIT(pm->tracemask, CONTENTS_PHASE_A, 0);
+			SETBIT(pm->tracemask, CONTENTS_PHASE_B, 0);
+			return;
+		}
+
+		SETBIT(pm->tracemask, CONTENTS_PHASE_A, pm->ps->eFlags & EF_PHASE_A);
+		SETBIT(pm->tracemask, CONTENTS_PHASE_B, pm->ps->eFlags & EF_PHASE_B);
+	}
 }
 
 // JPW NERVE -- stuck this here so it can be seen client & server side
@@ -994,10 +1009,10 @@ static qboolean PM_CheckProne(void)
 	{
 		if (trace.fraction != 1.0f)
 		{
-			pm->ps->eFlags &= ~EF_PRONE;
-			pm->ps->eFlags &= ~EF_PRONE_MOVING;
-			return qfalse;
-		}
+		pm->ps->eFlags &= ~EF_PRONE;
+		pm->ps->eFlags &= ~EF_PRONE_MOVING;
+		return qfalse;
+	}
 	}
 
 	if (!(pm->ps->eFlags & EF_PRONE))
@@ -6605,6 +6620,8 @@ void PmoveSingle(pmove_t *pmove)
 		pm->tracemask  &= ~CONTENTS_BODY;   // corpses can fly through bodies
 		pm->ps->eFlags &= ~EF_ZOOMING;
 	}
+
+	ETJump::setPlayerPhaseMask();
 
 	// ETJump: no activate lean
 	if (pm->noActivateLean)

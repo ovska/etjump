@@ -12,7 +12,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerDebuggerType>NativeOnly</LocalDebuggerDebuggerType>
     <LocalDebuggerAttach>false</LocalDebuggerAttach>
-    <LocalDebuggerCommandArguments>+set fs_game "etjump" +devmap goldrush</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>+set fs_game "etjump" +set sv_pure 0 +set r_mode -1 +devmap yin</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>$(ETROOT)</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugProgressioTracker|Win32'">

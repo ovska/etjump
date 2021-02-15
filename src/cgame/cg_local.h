@@ -3964,6 +3964,7 @@ namespace ETJump
 	void addLoopingSound(const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx, int volume, int soundTime);
 	bool hideMeCheck(int entityNum);
 	int checkExtraTrace(int value);
+	void setPhaseMask(pmove_t* pm);
 	void onPlayerRespawn(qboolean revived);
 	void runFrameEnd();
 
