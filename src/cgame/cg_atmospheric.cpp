@@ -179,7 +179,7 @@ static bool IsParticleOOB(cg_atmosphericParticle_t* particle, int heightOffset)
 	{
 		auto skyHeight = BG_GetSkyHeightAtPoint(particle->pos);
 
-		if (skyHeight == MAX_MAP_SIZE || particle->pos[2] + heightOffset > skyHeight)
+		if (skyHeight == MAX_ATMOSPHERIC_HEIGHT || particle->pos[2] + heightOffset > skyHeight)
 		{
 			return true;
 		}
@@ -276,11 +276,9 @@ static qboolean CG_RainParticleCheckVisible(cg_atmosphericParticle_t *particle)
 
 	float  moved;
 	vec2_t distance;
-//	int msec = trap_Milliseconds();
 
 	if (!particle || particle->active == ACT_NOT)
 	{
-//		checkvisibletime += trap_Milliseconds() - msec;
 		return(qfalse);
 	}
 
@@ -299,48 +297,23 @@ static qboolean CG_RainParticleCheckVisible(cg_atmosphericParticle_t *particle)
 	{
 		// ydnar: just nuke this particle, let it respawn
 		return CG_SetParticleActive(particle, ACT_NOT);
-
-		/*
-		// Attempt to respot the particle at our other side
-		particle->pos[0] -= 1.85f * distance[0];
-		particle->pos[1] -= 1.85f * distance[1];
-
-		// Valid spot?
-		pointHeight = BG_GetSkyHeightAtPoint( particle->pos );
-		if( pointHeight == MAX_ATMOSPHERIC_HEIGHT ) {
-		//			checkvisibletime += trap_Milliseconds() - msec;
-		    return CG_SetParticleActive( particle, ACT_NOT );
-		}
-
-		pointHeight = BG_GetSkyGroundHeightAtPoint( particle->pos );
-		if( pointHeight == MAX_ATMOSPHERIC_HEIGHT || pointHeight >= particle->pos[2] ) {
-		//			checkvisibletime += trap_Milliseconds() - msec;
-		    return CG_SetParticleActive( particle, ACT_NOT );
-		}
-		*/
 	}
 
-//	checkvisibletime += trap_Milliseconds() - msec;
 	return(qtrue);
 }
 
 static void CG_RainParticleRender(cg_atmosphericParticle_t *particle)
 {
 	// Draw a raindrop
-
 	vec3_t     forward, right;
 	polyVert_t verts[3];
 	vec2_t     line;
 	float      len, frac, dist;
 	vec3_t     start, finish;
 	float      groundHeight;
-//	int			msec = trap_Milliseconds();
-
-//	n_rendertime++;
 
 	if (particle->active == ACT_NOT)
 	{
-//		rendertime += trap_Milliseconds() - msec;
 		return;
 	}
 
@@ -366,7 +339,6 @@ static void CG_RainParticleRender(cg_atmosphericParticle_t *particle)
 
 	if (len <= 0)
 	{
-//		rendertime += trap_Milliseconds() - msec;
 		return;
 	}
 
@@ -417,8 +389,6 @@ static void CG_RainParticleRender(cg_atmosphericParticle_t *particle)
 	verts[2].modulate[3] = 200 * dist;
 
 	CG_AddPolyToPool(*particle->effectshader, verts);
-
-//	rendertime += trap_Milliseconds() - msec;
 }
 
 /*
@@ -431,9 +401,6 @@ static qboolean CG_SnowParticleGenerate(cg_atmosphericParticle_t *particle, vec3
 
 	float angle, distance;
 	float groundHeight, skyHeight;
-//	int msec = trap_Milliseconds();
-
-//	n_generatetime++;
 
 	angle    = random() * 2 * M_PI;
 	distance = 20 + cg_atmFx.maxDistance * random();
@@ -454,7 +421,6 @@ static qboolean CG_SnowParticleGenerate(cg_atmosphericParticle_t *particle, vec3
 	}
 	particle->pos[2] = groundHeight + random() * (skyHeight - groundHeight);
 
-	// make sure it doesn't fall from too far cause it then will go over our heads ('lower the ceiling')
 	if (cg_atmFx.baseHeightOffset > 0)
 	{
 		if (particle->pos[2] - cg.refdef_current->vieworg[2] > cg_atmFx.baseHeightOffset)
@@ -483,23 +449,17 @@ static qboolean CG_SnowParticleGenerate(cg_atmosphericParticle_t *particle, vec3
 		particle->effectshader = &cg_atmFx.effectshaders[(int)(random() * (float)(cg_atmFx.numEffectShaders))];
 	}
 
-//	generatetime += trap_Milliseconds() - msec;
 	return(qtrue);
 }
 
 static qboolean CG_SnowParticleCheckVisible(cg_atmosphericParticle_t *particle)
 {
 	// Check the snowflake is visible and still going, wrapping if necessary.
-
 	float  moved;
 	vec2_t distance;
-//	int msec = trap_Milliseconds();
-
-//	n_checkvisibletime++;
 
 	if (!particle || particle->active == ACT_NOT)
 	{
-//		checkvisibletime += trap_Milliseconds() - msec;
 		return(qfalse);
 	}
 
@@ -515,48 +475,24 @@ static qboolean CG_SnowParticleCheckVisible(cg_atmosphericParticle_t *particle)
 	distance[1] = particle->pos[1] - cg.refdef_current->vieworg[1];
 	if ((distance[0] * distance[0] + distance[1] * distance[1]) > Square(cg_atmFx.maxDistance))
 	{
-		// ydnar: just nuke this particle, let it respawn
 		return CG_SetParticleActive(particle, ACT_NOT);
-
-		/*
-		// Attempt to respot the particle at our other side
-		particle->pos[0] -= 1.85f * distance[0];
-		particle->pos[1] -= 1.85f * distance[1];
-
-		// ydnar: place particle in random position between ground and sky
-		groundHeight = BG_GetSkyGroundHeightAtPoint( particle->pos );
-		skyHeight = BG_GetSkyHeightAtPoint( particle->pos );
-		if( skyHeight == MAX_ATMOSPHERIC_HEIGHT )
-		    return CG_SetParticleActive( particle, ACT_NOT );
-		particle->pos[ 2 ] = groundHeight + random() * (skyHeight - groundHeight);
-
-		// ydnar: valid spot?
-		if( particle->pos[ 2 ] <= groundHeight || particle->pos[ 2 ] >= skyHeight )
-		    return CG_SetParticleActive( particle, ACT_NOT );
-		*/
 	}
 
-//	checkvisibletime += trap_Milliseconds() - msec;
 	return(qtrue);
 }
 
 static void CG_SnowParticleRender(cg_atmosphericParticle_t *particle)
 {
 	// Draw a snowflake
-
 	vec3_t     forward, right;
 	polyVert_t verts[3];
 	vec2_t     line;
 	float      len, frac, sinTumbling, cosTumbling, particleWidth, dist;
 	vec3_t     start, finish;
 	float      groundHeight;
-//	int			msec = trap_Milliseconds();
-
-//	n_rendertime++;
 
 	if (particle->active == ACT_NOT)
 	{
-//		rendertime += trap_Milliseconds() - msec;
 		return;
 	}
 
@@ -585,7 +521,6 @@ static void CG_SnowParticleRender(cg_atmosphericParticle_t *particle)
 
 	if (len <= 0)
 	{
-//		rendertime += trap_Milliseconds() - msec;
 		return;
 	}
 
@@ -642,8 +577,6 @@ static void CG_SnowParticleRender(cg_atmosphericParticle_t *particle)
 	verts[2].modulate[3] = 255;
 
 	CG_AddPolyToPool(*particle->effectshader, verts);
-
-//	rendertime += trap_Milliseconds() - msec;
 }
 
 /*
@@ -1059,30 +992,13 @@ void CG_AddAtmosphericEffects()
 
 	cg_atmFx.dropsRendered = cg_atmFx.dropsCreated = cg_atmFx.dropsSkipped = 0;
 
-//	getgroundtime = getskytime = rendertime = checkvisibletime = generatetime = 0;
-//	n_getgroundtime = n_getskytime = n_rendertime = n_checkvisibletime = n_generatetime = 0;
-
 	VectorSet(cg_atmFx.viewDir, cg.refdef_current->viewaxis[0][0], cg.refdef_current->viewaxis[0][1], 0.f);
 
 	for (curr = 0; curr < max; curr++)
 	{
 		particle = &cg_atmFx.particles[curr];
-		//%	if( !CG_SnowParticleCheckVisible( particle ) )
 		if (!cg_atmFx.ParticleCheckVisible(particle))
 		{
-			// Effect has terminated / fallen from screen view
-			/*
-			if( !particle->nextDropTime )
-			{
-			    // Stop rain being synchronized
-			    particle->nextDropTime = cg.time + rand() % ATMOSPHERIC_DROPDELAY;
-			}
-			if( currnum < curr || particle->nextDropTime > cg.time )
-			{
-			    cg_atmFx.dropsRendered++;
-			    continue;
-			} */
-			//%	if( !CG_SnowParticleGenerate( particle, currvec, currweight ) )
 			if (!cg_atmFx.ParticleGenerate(particle, currvec, currweight))
 			{
 				// Ensure it doesn't attempt to generate every frame, to prevent
@@ -1096,16 +1012,9 @@ void CG_AddAtmosphericEffects()
 			}
 		}
 
-		//%	CG_RainParticleRender( particle );
 		cg_atmFx.ParticleRender(particle);
 		cg_atmFx.dropsActive++;
 	}
 
-//	CG_RenderPolyPool();
-
 	cg_atmFx.lastRainTime = cg.time;
-
-//	CG_Printf( "Active: %d Generated: %d Rendered: %d Skipped: %d\n", cg_atmFx.dropsActive, cg_atmFx.dropsCreated, cg_atmFx.dropsRendered, cg_atmFx.dropsSkipped );
-//	CG_Printf( "gg: %i gs: %i rt: %i cv: %i ge: %i\n", getgroundtime, getskytime, rendertime, checkvisibletime, generatetime );
-//	CG_Printf( "\\-> %i \\-> %i \\-> %i \\-> %i \\-> %i\n", n_getgroundtime, n_getskytime, n_rendertime, n_checkvisibletime, n_generatetime );
 }

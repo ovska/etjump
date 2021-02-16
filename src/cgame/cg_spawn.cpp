@@ -5,7 +5,6 @@
 */
 
 #include "cg_local.h"
-#include "boost/optional.hpp"
 
 qboolean CG_SpawnString(const char *key, const char *defaultString, char **out)
 {
