@@ -232,8 +232,15 @@ static qboolean CG_RainParticleGenerate(cg_atmosphericParticle_t *particle, vec3
 	VectorNormalizeFast(particle->deltaNormalized);
 	particle->height       = ATMOSPHERIC_RAIN_HEIGHT + crandom() * 100;
 	particle->weight       = currweight;
-	particle->effectshader = &cg_atmFx.effectshaders[0];
-//	particle->effectshader = &cg_atmFx.effectshaders[ (int) (random() * ( cg_atmFx.numEffectShaders - 1 )) ];
+
+	if (cg_atmFx.numEffectShaders == 1)
+	{
+		particle->effectshader = &cg_atmFx.effectshaders[0];
+	}
+	else
+	{
+		particle->effectshader = &cg_atmFx.effectshaders[(int)(random() * (float)(cg_atmFx.numEffectShaders))];
+	}
 
 //	generatetime += trap_Milliseconds() - msec;
 	return(qtrue);
@@ -442,8 +449,14 @@ static qboolean CG_SnowParticleGenerate(cg_atmosphericParticle_t *particle, vec3
 	VectorNormalizeFast(particle->deltaNormalized);
 	particle->height       = ATMOSPHERIC_SNOW_HEIGHT + random() * 2;
 	particle->weight       = particle->height * 0.5f;
-	particle->effectshader = &cg_atmFx.effectshaders[0];
-//	particle->effectshader = &cg_atmFx.effectshaders[ (int) (random() * ( cg_atmFx.numEffectShaders - 1 )) ];
+	if (cg_atmFx.numEffectShaders == 1)
+	{
+		particle->effectshader = &cg_atmFx.effectshaders[0];
+	}
+	else
+	{
+		particle->effectshader = &cg_atmFx.effectshaders[(int)(random() * (float)(cg_atmFx.numEffectShaders))];
+	}
 
 //	generatetime += trap_Milliseconds() - msec;
 	return(qtrue);
