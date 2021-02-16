@@ -24,7 +24,6 @@
 #define MAX_ATMOSPHERIC_DISTANCE        1000    // maximum distance from refdef origin that particles are visible
 #define MAX_ATMOSPHERIC_EFFECTSHADERS   6       // maximum different effectshaders for an atmospheric effect
 #define ATMOSPHERIC_DROPDELAY           1000
-#define ATMOSPHERIC_CUTHEIGHT           800
 
 #define ATMOSPHERIC_RAIN_SPEED      (1.1f * DEFAULT_GRAVITY)
 #define ATMOSPHERIC_RAIN_HEIGHT     150
@@ -111,62 +110,6 @@ static void CG_AddPolyToPool(qhandle_t shader, const polyVert_t *verts)
 	pPolyBuffer->numIndicies += 3;
 	pPolyBuffer->numVerts    += 3;
 #endif // ATM_NEW
-}
-
-/*
-**	CG_AtmosphericKludge
-*/
-
-static qboolean kludgeChecked, kludgeResult;
-qboolean CG_AtmosphericKludge()
-{
-	// Activate rain for specified kludge maps that don't
-	// have it specified for them.
-
-	if (kludgeChecked)
-	{
-		return(kludgeResult);
-	}
-	kludgeChecked = qtrue;
-	kludgeResult  = qfalse;
-
-	/*if( !Q_stricmp( cgs.mapname, "maps/trainyard.bsp" ) )
-	{
-	    //CG_EffectParse( "T=RAIN,B=5 10,C=0.5 2,G=0.5 2,BV=30 100,GV=20 80,W=1 2,D=1000 1000" );
-	    CG_EffectParse( "T=RAIN,B=5 10,C=0.5,G=0.5 2,BV=50 50,GV=200 200,W=1 2,D=1000" );
-	    return( kludgeResult = qtrue );
-	}*/
-/*	if( !Q_stricmp( cgs.mapname, "maps/mp_railgun.bsp" ) )
-    {
-        //CG_EffectParse( "T=RAIN,B=5 10,C=0.5 2,G=0.5 2,BV=30 100,GV=20 80,W=1 2,D=1000 1000" );
-//		CG_EffectParse( "T=SNOW,B=5 10,C=0.5,G=0.3 2,BV=50 50,GV=30 80,W=1 2,D=5000" );
-
-        // snow storm, quite horizontally
-        //CG_EffectParse( "T=SNOW,B=20 30,C=0.8,G=0.5 8,BV=100 100,GV=70 150,W=3 5,D=5000" );
-
-        // mild snow storm, quite vertically - likely go for this
-        //CG_EffectParse( "T=SNOW,B=5 10,C=0.5,G=0.3 2,BV=20 30,GV=25 40,W=3 5,D=5000" );
-        CG_EffectParse( "T=SNOW,B=5 10,C=0.5,G=0.3 2,BV=20 30,GV=25 40,W=3 5,D=2000" );
-
-        // cpu-cheap press event effect
-        //CG_EffectParse( "T=SNOW,B=5 10,C=0.5,G=0.3 2,BV=20 30,GV=25 40,W=3 5,D=500" );
-//		CG_EffectParse( "T=SNOW,B=5 10,C=0.5,G=0.3 2,BV=20 30,GV=25 40,W=3 5,D=750" );
-        return( kludgeResult = qtrue );
-    }*/
-
-	/*if( !Q_stricmp( cgs.mapname, "maps/mp_goliath.bsp" ) ) {
-	    //CG_EffectParse( "T=SNOW,B=5 7,C=0.2,G=0.1 5,BV=15 25,GV=25 40,W=3 5,D=400" );
-	    CG_EffectParse( "T=SNOW,B=5 7,C=0.2,G=0.1 5,BV=15 25,GV=25 40,W=3 5,H=512,D=2000" );
-	    return( kludgeResult = qtrue );
-	}*/
-	/*if( !Q_stricmp( cgs.rawmapname, "sp_bruck_test006" ) ) {
-	    //T=SNOW,B=5 10,C=0.5,G=0.3 2,BV=20 30,GV=25 40,W=3 5,H=608,D=2000
-	    CG_EffectParse( "T=SNOW,B=5 10,C=0.5,G=0.3 2,BV=20 30,GV=25 40,W=3 5,H=512,D=2000 4000" );
-	    //CG_EffectParse( "T=SNOW,B=5 7,C=0.2,G=0.1 5,BV=15 25,GV=25 40,W=3 5,H=512,D=2000" );
-	    return( kludgeResult = qtrue );
-	}*/
-
-	return(kludgeResult = qfalse);
 }
 
 typedef enum
@@ -781,11 +724,6 @@ void CG_EffectParse(const char *effectstr)
 	char        *startptr, *eqptr, *endptr;
 	char        workbuff[128];
 	atmFXType_t atmFXType = ATM_NONE;
-
-	if (CG_AtmosphericKludge())
-	{
-		return;
-	}
 
 	// Set up some default values
 	cg_atmFx.baseVec[0] = cg_atmFx.baseVec[1] = 0;
