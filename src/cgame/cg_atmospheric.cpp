@@ -174,11 +174,11 @@ static bool IsParticleOOB(cg_atmosphericParticle_t* particle, int heightOffset)
 	{
 		return true;
 	}
-	// floated out of sky
 	if (cg_atmFx.gravScale < 0.0f)
 	{
 		auto skyHeight = BG_GetSkyHeightAtPoint(particle->pos);
 
+		// floated outside map bounds or too far into the sky
 		if (skyHeight == MAX_ATMOSPHERIC_HEIGHT || particle->pos[2] + heightOffset > skyHeight)
 		{
 			return true;
@@ -710,6 +710,10 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 	cg_atmFx.gustWeight = 1.5f;
 	bheight             = 0;
 
+	// etjump: init extensions to defaults
+	cg_atmFx.maxDistance = MAX_ATMOSPHERIC_DISTANCE;
+	cg_atmFx.dropDelay = ATMOSPHERIC_DROPDELAY;
+
 	// Parse the parameter string
 	Q_strncpyz(workbuff, effectstr, sizeof(workbuff));
 	for (startptr = workbuff; *startptr; )
@@ -828,7 +832,6 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 				if (delay < 500 || delay > 10000)
 				{
 					CG_Printf("XDELAY %i not in 500..1000, defaulting to %i.\n", delay, ATMOSPHERIC_DROPDELAY);
-					cg_atmFx.dropDelay = ATMOSPHERIC_DROPDELAY;
 				}
 				else
 				{
@@ -843,7 +846,6 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 				if (dist < 100 || dist > 2000)
 				{
 					CG_Printf("XDIST %i not in 100..2000, defaulting to %i.\n", dist, MAX_ATMOSPHERIC_DISTANCE);
-					cg_atmFx.maxDistance = MAX_ATMOSPHERIC_DISTANCE;
 				}
 				else
 				{
