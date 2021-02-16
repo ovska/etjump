@@ -2189,6 +2189,14 @@ struct range_t
 };
 // End CGaz 5
 
+// custom atmosphere
+struct cg_customAtmosphere {
+	static const int maxShaders = 8;
+
+	char* customShaders[6]; // custom shaders to use for the particles
+	int customShaderCount; // custom shader count
+};
+
 //==============================================================================
 
 extern cgs_t        cgs;
@@ -3268,7 +3276,7 @@ void CG_TransitionPlayerState(playerState_t *ps, playerState_t *ops);
 // cg_atmospheric.c
 //
 void CG_GenerateTracemap(void);
-void CG_EffectParse(const char *effectstr);
+void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos);
 void CG_AddAtmosphericEffects();
 
 //===============================================

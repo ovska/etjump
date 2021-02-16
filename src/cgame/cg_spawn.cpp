@@ -5,6 +5,7 @@
 */
 
 #include "cg_local.h"
+#include "boost/optional.hpp"
 
 qboolean CG_SpawnString(const char *key, const char *defaultString, char **out)
 {
@@ -324,6 +325,37 @@ char *CG_AddSpawnVarToken(const char *string)
 	return dest;
 }
 
+cg_customAtmosphere CG_ParseCustomAtmos()
+{
+	char* s;
+	float f;
+	cg_customAtmosphere cfg{};
+
+	std::string shaderKey = "customatmos_shader";
+	if (CG_SpawnString(shaderKey.c_str(), "", &s))
+	{
+		cfg.customShaders[0] = s;
+		cfg.customShaderCount = 1;
+	}
+	else
+	{
+		cfg.customShaderCount = 0;
+
+		for (int i = 0; i < cg_customAtmosphere::maxShaders; i++)
+		{
+			if (!CG_SpawnString((shaderKey + std::to_string(i + 1)).c_str(), "", &s))
+			{
+				break;
+			}
+
+			cfg.customShaders[i] = s;
+			cfg.customShaderCount++;
+		}
+	}
+
+	return cfg;
+}
+
 /*
 ====================
 CG_ParseSpawnVars
@@ -429,7 +461,9 @@ void SP_worldspawn(void)
 	BG_InitLocations(cg.mapcoordsMins, cg.mapcoordsMaxs);
 
 	CG_SpawnString("atmosphere", "", &s);
-	CG_EffectParse(s);
+
+	auto customAtmo = CG_ParseCustomAtmos();
+	CG_EffectParse(s, &customAtmo);
 
 	cg.fiveMinuteSound_g[0]                       = \
 	    cg.fiveMinuteSound_a[0]                   = \
