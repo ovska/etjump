@@ -168,6 +168,24 @@ static qboolean CG_SetParticleActive(cg_atmosphericParticle_t *particle, active_
 	return active ? qtrue : qfalse;
 }
 
+static bool IsParticleOOB(cg_atmosphericParticle_t* particle, int heightOffset)
+{
+	if (particle->pos[2] + heightOffset < BG_GetSkyGroundHeightAtPoint(particle->pos))
+	{
+		return true;
+	}
+	// floated out of sky
+	if (cg_atmFx.gravScale < 0.0f)
+	{
+		auto skyHeight = BG_GetSkyHeightAtPoint(particle->pos);
+
+		if (skyHeight == MAX_MAP_SIZE || particle->pos[2] + heightOffset > skyHeight)
+		{
+			return true;
+		}
+	}
+	return false;
+}
 
 /*
 **	Raindrop management functions
@@ -268,9 +286,9 @@ static qboolean CG_RainParticleCheckVisible(cg_atmosphericParticle_t *particle)
 
 	moved = (cg.time - cg_atmFx.lastRainTime) * 0.001;  // Units moved since last frame
 	VectorMA(particle->pos, moved, particle->delta, particle->pos);
-	if (particle->pos[2] + particle->height < BG_GetSkyGroundHeightAtPoint(particle->pos))
+
+	if (IsParticleOOB(particle, particle->height))
 	{
-//		checkvisibletime += trap_Milliseconds() - msec;
 		return CG_SetParticleActive(particle, ACT_NOT);
 	}
 
@@ -487,9 +505,9 @@ static qboolean CG_SnowParticleCheckVisible(cg_atmosphericParticle_t *particle)
 
 	moved = (cg.time - cg_atmFx.lastRainTime) * 0.001;  // Units moved since last frame
 	VectorMA(particle->pos, moved, particle->delta, particle->pos);
-	if (particle->pos[2] < BG_GetSkyGroundHeightAtPoint(particle->pos))
+
+	if (IsParticleOOB(particle, 0))
 	{
-//		checkvisibletime += trap_Milliseconds() - msec;
 		return CG_SetParticleActive(particle, ACT_NOT);
 	}
 
