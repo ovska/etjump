@@ -173,19 +173,18 @@ static qboolean CG_SetParticleActive(cg_atmosphericParticle_t *particle, active_
 
 static bool IsParticleOOB(cg_atmosphericParticle_t* particle, int heightOffset)
 {
+	// hit the ground
 	if (particle->pos[2] + heightOffset < BG_GetSkyGroundHeightAtPoint(particle->pos))
 	{
 		return true;
 	}
-	if (cg_atmFx.gravScale < 0.0f)
-	{
-		auto skyHeight = BG_GetSkyHeightAtPoint(particle->pos);
 
-		// floated outside map bounds or too far into the sky
-		if (skyHeight == MAX_ATMOSPHERIC_HEIGHT || particle->pos[2] + heightOffset > skyHeight)
-		{
-			return true;
-		}
+	auto skyHeight = BG_GetSkyHeightAtPoint(particle->pos);
+
+	// floated outside map bounds or too far into the sky w/ negative gravity
+	if (skyHeight == MAX_ATMOSPHERIC_HEIGHT || particle->pos[2] + heightOffset > skyHeight)
+	{
+		return true;
 	}
 	return false;
 }
@@ -646,7 +645,7 @@ static qboolean CG_CustomParticleGenerate(cg_atmosphericParticle_t* particle, ve
 
 static qboolean CG_CustomParticleCheckVisible(cg_atmosphericParticle_t* particle)
 {
-	// Check the snowflake is visible and still going, wrapping if necessary.
+	// Check the particle is visible and still going, wrapping if necessary.
 	float  moved;
 	vec2_t distance;
 
@@ -658,11 +657,6 @@ static qboolean CG_CustomParticleCheckVisible(cg_atmosphericParticle_t* particle
 	moved = (cg.time - cg_atmFx.lastRainTime) * 0.001;  // Units moved since last frame
 	VectorMA(particle->pos, moved, particle->delta, particle->pos);
 
-	if (IsParticleOOB(particle, particle->height))
-	{
-		return CG_SetParticleActive(particle, ACT_NOT);
-	}
-
 	distance[0] = particle->pos[0] - cg.refdef_current->vieworg[0];
 	distance[1] = particle->pos[1] - cg.refdef_current->vieworg[1];
 	if ((distance[0] * distance[0] + distance[1] * distance[1]) > Square(cg_atmFx.maxDistance))
@@ -670,7 +664,12 @@ static qboolean CG_CustomParticleCheckVisible(cg_atmosphericParticle_t* particle
 		return CG_SetParticleActive(particle, ACT_NOT);
 	}
 
-	return(qtrue);
+	if (IsParticleOOB(particle, particle->height))
+	{
+		return CG_SetParticleActive(particle, ACT_NOT);
+	}
+
+	return qtrue;
 }
 
 static void CG_CustomParticleRender(cg_atmosphericParticle_t* particle)
@@ -885,7 +884,7 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 	float       bmin, bmax, cmin, cmax, gmin, gmax, bdrop, gdrop /*, wsplash, lsplash*/;
 	int         count, bheight;
 	char        *startptr, *eqptr, *endptr;
-	char        workbuff[128];
+	char        workbuff[512];
 	atmFXType_t atmFXType = ATM_NONE;
 
 	// Set up some default values
