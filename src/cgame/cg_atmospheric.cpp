@@ -4,7 +4,7 @@
 **
 **	Add atmospheric effects (e.g. rain, snow etc.) to view.
 **
-**	Current supported effects are rain and snow.
+**	Current supported effects are rain and snow (and custom!)
 **
 */
 
@@ -14,11 +14,6 @@
 
 #define MAX_ATMOSPHERIC_HEIGHT          MAX_MAP_SIZE    // maximum world height
 #define MIN_ATMOSPHERIC_HEIGHT          -MAX_MAP_SIZE   // minimum world height
-
-//int getgroundtime, getskytime, rendertime, checkvisibletime, generatetime;
-//int n_getgroundtime, n_getskytime, n_rendertime, n_checkvisibletime, n_generatetime;
-
-//static qboolean CG_LoadTraceMap( void );
 
 #define MAX_ATMOSPHERIC_PARTICLES       4000    // maximum # of particles
 #define MAX_ATMOSPHERIC_DISTANCE        1000    // maximum distance from refdef origin that particles are visible
@@ -156,6 +151,7 @@ typedef struct cg_atmosphericEffect_s
 	// - etjump extensions -
 	float gravScale; // gravity scale (range -2..2), default 1.1 for rain, 0.1 for snow
 	int minDistance, maxDistance; // particle distance range (10..2000), default 1000
+	float minColorJitter, maxColorJitter; // particle color jitter range, 0..1 default 1..1
 	
 	bool customSize; // whether custom size is set
 	vec2_t sizeMin, sizeMax; // particle size bounds
@@ -594,7 +590,6 @@ static qboolean CG_CustomParticleGenerate(cg_atmosphericParticle_t* particle, ve
 	particle->pos[0] = cg.refdef_current->vieworg[0] + sin(angle) * distance;
 	particle->pos[1] = cg.refdef_current->vieworg[1] + cos(angle) * distance;
 
-	// ydnar: choose a spawn point randomly between sky and ground
 	skyHeight = BG_GetSkyHeightAtPoint(particle->pos);
 
 	// out of map bounds
@@ -608,7 +603,7 @@ static qboolean CG_CustomParticleGenerate(cg_atmosphericParticle_t* particle, ve
 		return qfalse;
 	}
 
-	// TODO: bias for spawn height calculation??
+	// TODO: bias for spawn height calculation?
 	particle->pos[2] = groundHeight + random() * (skyHeight - groundHeight);
 
 	if (cg_atmFx.baseHeightOffset > 0)
@@ -624,11 +619,29 @@ static qboolean CG_CustomParticleGenerate(cg_atmosphericParticle_t* particle, ve
 	}
 
 	CG_SetParticleActive(particle, ACT_FALLING);
+
+	// randomize color. this goes into the modulate-field in the entity, see shader reference
+	if (cg_atmFx.minColorJitter != cg_atmFx.maxColorJitter)
+	{
+		const float jitterAmount = cg_atmFx.maxColorJitter - cg_atmFx.minColorJitter;
+		particle->colour[0] = cg_atmFx.minColorJitter + jitterAmount * random() * 0xFF;
+		particle->colour[1] = cg_atmFx.minColorJitter + jitterAmount * random() * 0xFF;
+		particle->colour[2] = cg_atmFx.minColorJitter + jitterAmount * random() * 0xFF;
+	}
+
 	VectorCopy(currvec, particle->delta);
 	particle->delta[2] += crandom() * 25;
 	VectorCopy(particle->delta, particle->deltaNormalized);
 	VectorNormalizeFast(particle->deltaNormalized);
-	particle->height = ATMOSPHERIC_SNOW_HEIGHT + random() * 2;
+
+	if (cg_atmFx.sizeMin[0] == cg_atmFx.sizeMax[0])
+	{
+		particle->height = cg_atmFx.sizeMin[0];
+	}
+	else
+	{
+		particle->height = cg_atmFx.sizeMin[0] + (float)((cg_atmFx.sizeMax[0] - cg_atmFx.sizeMin[0]) * random());
+	}
 	particle->weight = particle->height * 0.5f;
 
 	if (cg_atmFx.numEffectShaders == 1)
@@ -674,7 +687,6 @@ static qboolean CG_CustomParticleCheckVisible(cg_atmosphericParticle_t* particle
 
 static void CG_CustomParticleRender(cg_atmosphericParticle_t* particle)
 {
-	// Draw a snowflake
 	vec3_t     forward, right;
 	polyVert_t verts[3];
 	vec2_t     line;
@@ -719,8 +731,9 @@ static void CG_CustomParticleRender(cg_atmosphericParticle_t* particle)
 	line[1] = particle->pos[1] - cg.refdef_current->vieworg[1];
 
 	dist = DistanceSquared(particle->pos, cg.refdef_current->vieworg);
+
 	// dist becomes scale
-	if (dist > Square(500.f))
+	if (0/*dist > Square(500.f)*/)
 	{
 		dist = 1.f + ((dist - Square(500.f)) * (10.f / Square(2000.f)));
 	}
@@ -743,29 +756,26 @@ static void CG_CustomParticleRender(cg_atmosphericParticle_t* particle)
 
 	particleWidth = dist * particle->weight;
 
+	// todo: figure out which one of these is height
 	VectorMA(finish, -particleWidth, right, verts[0].xyz);
 	verts[0].st[0] = 0;
 	verts[0].st[1] = 0;
-	verts[0].modulate[0] = 255;
-	verts[0].modulate[1] = 255;
-	verts[0].modulate[2] = 255;
-	verts[0].modulate[3] = 255;
 
 	VectorMA(start, -particleWidth, right, verts[1].xyz);
 	verts[1].st[0] = 0;
 	verts[1].st[1] = 1;
-	verts[1].modulate[0] = 255;
-	verts[1].modulate[1] = 255;
-	verts[1].modulate[2] = 255;
-	verts[1].modulate[3] = 255;
 
 	VectorMA(start, particleWidth, right, verts[2].xyz);
 	verts[2].st[0] = 1;
 	verts[2].st[1] = 1;
-	verts[2].modulate[0] = 255;
-	verts[2].modulate[1] = 255;
-	verts[2].modulate[2] = 255;
-	verts[2].modulate[3] = 255;
+
+	for (auto index : { 0, 1, 2 })
+	{
+		verts[index].modulate[0] = particle->colour[0];
+		verts[index].modulate[1] = particle->colour[1];
+		verts[index].modulate[2] = particle->colour[2];
+		verts[index].modulate[3] = 255.0f;
+	}
 
 	CG_AddPolyToPool(*particle->effectshader, verts);
 }
@@ -905,6 +915,7 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 	cg_atmFx.minDistance = 20;
 	cg_atmFx.maxDistance = MAX_ATMOSPHERIC_DISTANCE;
 	cg_atmFx.customSize = false;
+	cg_atmFx.minColorJitter = cg_atmFx.maxColorJitter = 1.0f; // TODO: check if this actually does anything -_-
 
 	// Parse the parameter string
 	Q_strncpyz(workbuff, effectstr, sizeof(workbuff));
@@ -1055,6 +1066,22 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 				cg_atmFx.sizeMin[1] = min;
 				cg_atmFx.sizeMax[1] = max;
 				cg_atmFx.customSize = true;
+			}
+			else if (!Q_stricmp(startptr, "XCOLORS"))
+			{
+				float min, max;
+				CG_EP_ParseFloats(eqptr, &min, &max);
+
+				if (min > max || min < 0.0f || max > 1.0f)
+				{
+					CG_Printf("XCOLORS range (%f %f) invalid, not in 0..1\n", min, max);
+
+				}
+				else
+				{
+					cg_atmFx.minColorJitter = min;
+					cg_atmFx.maxColorJitter = max;
+				}
 			}
 			// end etjump extensions
 			else
