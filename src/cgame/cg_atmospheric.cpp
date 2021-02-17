@@ -155,7 +155,6 @@ typedef struct cg_atmosphericEffect_s
 
 	// - etjump extensions -
 	float gravScale; // gravity scale (range -2..2), default 1.1 for rain, 0.1 for snow
-	int dropDelay; // particle spawn delay (range 500..10000), default 1000
 	int minDistance, maxDistance; // particle distance range (10..2000), default 1000
 	
 	bool customSize; // whether custom size is set
@@ -297,7 +296,7 @@ static qboolean CG_RainParticleCheckVisible(cg_atmosphericParticle_t *particle)
 	distance[0] = particle->pos[0] - cg.refdef_current->vieworg[0];
 	distance[1] = particle->pos[1] - cg.refdef_current->vieworg[1];
 
-	if ((distance[0] * distance[0] + distance[1] * distance[1]) > Square(cg_atmFx.maxDistance))
+	if ((distance[0] * distance[0] + distance[1] * distance[1]) > Square(MAX_ATMOSPHERIC_DISTANCE))
 	{
 		// ydnar: just nuke this particle, let it respawn
 		return CG_SetParticleActive(particle, ACT_NOT);
@@ -477,7 +476,7 @@ static qboolean CG_SnowParticleCheckVisible(cg_atmosphericParticle_t *particle)
 
 	distance[0] = particle->pos[0] - cg.refdef_current->vieworg[0];
 	distance[1] = particle->pos[1] - cg.refdef_current->vieworg[1];
-	if ((distance[0] * distance[0] + distance[1] * distance[1]) > Square(cg_atmFx.maxDistance))
+	if ((distance[0] * distance[0] + distance[1] * distance[1]) > Square(MAX_ATMOSPHERIC_DISTANCE))
 	{
 		return CG_SetParticleActive(particle, ACT_NOT);
 	}
@@ -906,7 +905,6 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 	// etjump: init extensions to defaults
 	cg_atmFx.minDistance = 20;
 	cg_atmFx.maxDistance = MAX_ATMOSPHERIC_DISTANCE;
-	cg_atmFx.dropDelay = ATMOSPHERIC_DROPDELAY;
 	cg_atmFx.customSize = false;
 
 	// Parse the parameter string
@@ -1010,19 +1008,21 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 				CG_EP_ParseInts(eqptr, &bheight, &bheight);
 			}
 			// begin etjump extensions
-			else if (!Q_stricmp(startptr, "XDELAY"))
+			else if (!Q_stricmp(startptr, "XGRAV"))
 			{
-				int delay;
-				CG_EP_ParseInts(eqptr, &delay, &delay);
+				float grav;
+				CG_EP_ParseFloats(eqptr, &grav, &grav);
 
-				if (delay < 500 || delay > 10000)
+				if (grav < -2.0f || grav > 2.0f)
 				{
-					CG_Printf("XDELAY %i not in 500..1000, defaulting to %i.\n", delay, ATMOSPHERIC_DROPDELAY);
+					CG_Printf("XGRAV %f invalid, not in -2..2.\n", grav);
 				}
 				else
 				{
-					cg_atmFx.dropDelay = delay;
+					cg_atmFx.gravScale = grav;
 				}
+
+				cg_atmFx.baseVec[2] = cg_atmFx.gustVec[2] = -(cg_atmFx.gravScale * DEFAULT_GRAVITY);
 			}
 			else if (!Q_stricmp(startptr, "XDIST"))
 			{
@@ -1040,22 +1040,6 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 					cg_atmFx.minDistance = min;
 					cg_atmFx.maxDistance = max;
 				}
-			}
-			else if (!Q_stricmp(startptr, "XGRAV"))
-			{
-				float grav;
-				CG_EP_ParseFloats(eqptr, &grav, &grav);
-
-				if (grav < -2.0f || grav > 2.0f)
-				{
-					CG_Printf("XGRAV %f invalid, not in -2..2.\n", grav);
-				}
-				else
-				{
-					cg_atmFx.gravScale = grav;
-				}
-
-				cg_atmFx.baseVec[2] = cg_atmFx.gustVec[2] = -(cg_atmFx.gravScale * DEFAULT_GRAVITY);
 			}
 			else if (!Q_stricmp(startptr, "XWIDTH"))
 			{
@@ -1180,7 +1164,9 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 
 	// Initialise atmospheric effect to prevent all particles falling at the start
 	for (count = 0; count < cg_atmFx.numDrops; count++)
-		cg_atmFx.particles[count].nextDropTime = cg_atmFx.dropDelay + (rand() % cg_atmFx.dropDelay);
+	{
+		cg_atmFx.particles[count].nextDropTime = ATMOSPHERIC_DROPDELAY + (rand() % ATMOSPHERIC_DROPDELAY);
+	}
 
 	CG_EffectGust();
 }
@@ -1230,7 +1216,7 @@ void CG_AddAtmosphericEffects()
 			{
 				// Ensure it doesn't attempt to generate every frame, to prevent
 				// 'clumping' when there's only a small sky area available.
-				particle->nextDropTime = cg.time + cg_atmFx.dropDelay;
+				particle->nextDropTime = cg.time + ATMOSPHERIC_DROPDELAY;
 				continue;
 			}
 			else
