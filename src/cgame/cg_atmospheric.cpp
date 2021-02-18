@@ -17,6 +17,7 @@
 
 #define MAX_ATMOSPHERIC_PARTICLES       4000    // maximum # of particles
 #define MAX_ATMOSPHERIC_DISTANCE        1000    // maximum distance from refdef origin that particles are visible
+#define MIN_ATMOSPHERIC_DIST_DEFAULT    20
 #define MAX_ATMOSPHERIC_EFFECTSHADERS   6       // maximum different effectshaders for an atmospheric effect
 #define ATMOSPHERIC_DROPDELAY           1000
 
@@ -121,6 +122,7 @@ typedef struct cg_atmosphericParticle_s
 	active_t active;
 	int nextDropTime;
 	qhandle_t *effectshader;
+	float fadeAlpha; // 0.0 - 1.0, fade in effect when spawning particle
 } cg_atmosphericParticle_t;
 
 typedef struct cg_atmosphericEffect_s
@@ -149,12 +151,18 @@ typedef struct cg_atmosphericEffect_s
 	int dropsRendered, dropsCreated, dropsSkipped;
 
 	// - etjump extensions -
-	float gravScale; // gravity scale (range -2..2), default 1.1 for rain, 0.1 for snow
-	int minDistance, maxDistance; // particle distance range (10..2000), default 1000
-	float minColorJitter, maxColorJitter; // particle color jitter range, 0..1 default 1..1
+	float gravScale; // XGRAV: gravity scale (range -2..2), default 1.1 for rain, 0.1 for snow
+	int minDistance, maxDistance; // XDIST: particle distance range (10..2000), default 20..1000
+	float minColorJitter, maxColorJitter; // XCOLORS: particle color jitter range, 0..1 default 1..1
 	
 	bool customSize; // whether custom size is set
-	vec2_t sizeMin, sizeMax; // particle size bounds
+	vec2_t sizeMin, sizeMax; // XWIDTH & XHEIGHT: particle size bounds
+
+	int fadeInTime; // XFADETIME: time until new particle has 255 alpha
+	float fadeStep; // internal: step per calculation
+	int fadeInDist, fadeOutDist; // XFADEDIST min/max for fading particle. should be between XDIST range
+	bool _lifetimeFade;
+	bool _distanceFade;
 	// - etjump extensions -
 } cg_atmosphericEffect_t;
 
@@ -183,6 +191,120 @@ static bool IsParticleOOB(cg_atmosphericParticle_t* particle, int heightOffset)
 		return true;
 	}
 	return false;
+}
+
+// calculate distance fading. assumes at least one distance fading is enabled
+static byte CalculateDistanceFade(cg_atmosphericParticle_t* particle, float distance)
+{
+	float alpha = 255.f;
+
+	distance = sqrt(distance);
+
+	if (distance > cg_atmFx.maxDistance || distance < cg_atmFx.minDistance)
+	{
+		return 0.f;
+	}
+
+	if (cg_atmFx.fadeInDist)
+	{
+		float fadeInAlpha;
+
+		if (distance < cg_atmFx.fadeInDist)
+		{
+			fadeInAlpha = (distance - cg_atmFx.minDistance) / (cg_atmFx.fadeInDist - cg_atmFx.minDistance) * 255.f;
+		}
+		else
+		{
+			fadeInAlpha = 255.f;
+		}
+
+		if (fadeInAlpha < alpha)
+		{
+			alpha = fadeInAlpha;
+		}
+	}
+
+	if (cg_atmFx.fadeOutDist)
+	{
+		float fadeOutAlpha;
+
+		if (distance > cg_atmFx.fadeOutDist)
+		{
+			auto fadeRef = cg_atmFx.maxDistance - cg_atmFx.fadeOutDist;
+			auto fadeLen = distance - cg_atmFx.fadeOutDist;
+			auto percent = fadeLen / (float)fadeRef;
+			fadeOutAlpha = (1.0f - (distance - cg_atmFx.fadeOutDist) / (float)(cg_atmFx.maxDistance - cg_atmFx.fadeOutDist)) * 255.f;
+		}
+		else
+		{
+			fadeOutAlpha = 255.f;
+		}
+
+		if (fadeOutAlpha < alpha)
+		{
+			alpha = fadeOutAlpha;
+		}
+	}
+
+	return alpha;
+}
+
+// calculate and update particle opacity by lifetime
+static byte CalculateLifetimeFade(cg_atmosphericParticle_t* particle)
+{
+	float alpha;
+
+	if (particle->fadeAlpha >= 1.0f)
+	{
+		alpha = 255.0f;
+	}
+	else if (!cg_atmFx.fadeStep)
+	{
+		particle->fadeAlpha = 1.0f;
+		alpha = 255.0f;
+	}
+	else
+	{
+		particle->fadeAlpha += cg_atmFx.fadeStep;
+
+		if (particle->fadeAlpha >= 1.0f)
+		{
+			alpha = 255.0f;
+		}
+		else
+		{
+			alpha = 256.0f * particle->fadeAlpha;
+		}
+	}
+
+	return alpha;
+}
+
+static byte CalculateUpdateFade(cg_atmosphericParticle_t* particle, float distance)
+{
+	float alpha = 255.f;
+	float lf, df;
+
+	if (cg_atmFx._lifetimeFade)
+	{
+		lf = CalculateLifetimeFade(particle);
+
+		if (lf < alpha)
+		{
+			alpha = lf;
+		}
+	}
+	if (cg_atmFx._distanceFade)
+	{
+		df = CalculateDistanceFade(particle, distance);
+
+		if (df < alpha)
+		{
+			alpha = df;
+		}
+	}
+
+	return alpha;
 }
 
 /*
@@ -602,7 +724,7 @@ static qboolean CG_CustomParticleGenerate(cg_atmosphericParticle_t* particle, ve
 	{
 		return qfalse;
 	}
-
+	
 	// TODO: bias for spawn height calculation?
 	particle->pos[2] = groundHeight + random() * (skyHeight - groundHeight);
 
@@ -653,7 +775,8 @@ static qboolean CG_CustomParticleGenerate(cg_atmosphericParticle_t* particle, ve
 		particle->effectshader = &cg_atmFx.effectshaders[(int)(random() * (float)(cg_atmFx.numEffectShaders))];
 	}
 
-	return(qtrue);
+	particle->fadeAlpha = 0.f;
+	return qtrue;
 }
 
 static qboolean CG_CustomParticleCheckVisible(cg_atmosphericParticle_t* particle)
@@ -690,7 +813,7 @@ static void CG_CustomParticleRender(cg_atmosphericParticle_t* particle)
 	vec3_t     forward, right;
 	polyVert_t verts[3];
 	vec2_t     line;
-	float      len, frac, sinTumbling, cosTumbling, particleWidth, dist;
+	float      len, frac, sinTumbling, cosTumbling, particleWidth, dist, realDistSquared;
 	vec3_t     start, finish;
 	float      groundHeight;
 
@@ -731,9 +854,10 @@ static void CG_CustomParticleRender(cg_atmosphericParticle_t* particle)
 	line[1] = particle->pos[1] - cg.refdef_current->vieworg[1];
 
 	dist = DistanceSquared(particle->pos, cg.refdef_current->vieworg);
+	realDistSquared = dist;
 
 	// dist becomes scale
-	if (0/*dist > Square(500.f)*/)
+	if (false) //if (dist > Square(500.f))
 	{
 		dist = 1.f + ((dist - Square(500.f)) * (10.f / Square(2000.f)));
 	}
@@ -769,12 +893,14 @@ static void CG_CustomParticleRender(cg_atmosphericParticle_t* particle)
 	verts[2].st[0] = 1;
 	verts[2].st[1] = 1;
 
+	const byte alpha = CalculateUpdateFade(particle, realDistSquared);
+
 	for (auto index : { 0, 1, 2 })
 	{
 		verts[index].modulate[0] = particle->colour[0];
 		verts[index].modulate[1] = particle->colour[1];
 		verts[index].modulate[2] = particle->colour[2];
-		verts[index].modulate[3] = 255.0f;
+		verts[index].modulate[3] = alpha;
 	}
 
 	CG_AddPolyToPool(*particle->effectshader, verts);
@@ -916,6 +1042,7 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 	cg_atmFx.maxDistance = MAX_ATMOSPHERIC_DISTANCE;
 	cg_atmFx.customSize = false;
 	cg_atmFx.minColorJitter = cg_atmFx.maxColorJitter = 1.0f; // TODO: check if this actually does anything -_-
+	cg_atmFx.fadeInTime = cg_atmFx.fadeStep = 0;
 
 	// Parse the parameter string
 	Q_strncpyz(workbuff, effectstr, sizeof(workbuff));
@@ -1043,7 +1170,7 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 				{
 					CG_Printf(
 						"XDIST range invalid (%i %i) must be in 1..2000, defaulting to (%i %i).\n",
-						min, max, 20, MAX_ATMOSPHERIC_DISTANCE);
+						min, max, MIN_ATMOSPHERIC_DIST_DEFAULT, MAX_ATMOSPHERIC_DISTANCE);
 				}
 				else
 				{
@@ -1081,6 +1208,38 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 				{
 					cg_atmFx.minColorJitter = min;
 					cg_atmFx.maxColorJitter = max;
+				}
+			}
+			else if (!Q_stricmp(startptr, "XFADEIN"))
+			{
+				int fade;
+				CG_EP_ParseInts(eqptr, &fade, &fade);
+
+				if (fade < 1)
+				{
+					CG_Printf("XFADEIN (%i) invalid invalid\n", fade);
+
+				}
+				else
+				{
+					cg_atmFx.fadeInTime = fade;
+					cg_atmFx.fadeStep = 1.f / (float)fade;
+				}
+			}
+			else if (!Q_stricmp(startptr, "XFADEDIST"))
+			{
+				int min, max;
+				CG_EP_ParseInts(eqptr, &min, &max);
+
+				if (min > max || min < 0)
+				{
+					CG_Printf("XFADEDIST range (%i %i) invalid\n", min, max, MAX_ATMOSPHERIC_DISTANCE);
+
+				}
+				else
+				{
+					cg_atmFx.fadeInDist = min;
+					cg_atmFx.fadeOutDist = max;
 				}
 			}
 			// end etjump extensions
@@ -1138,22 +1297,20 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 	}
 	else if (atmFXType == ATM_CUSTOM)
 	{
-		// custom shaders
+		// load custom shaders
 		int i = 0;
-
 		while (i < customAtmos->customShaderCount)
 		{
 			auto shaderHandle = trap_R_RegisterShader(customAtmos->customShaders[i]);
 
 			if (!shaderHandle)
 			{
-				CG_Printf("Custom atmosphere shader \"%s\" could not be registered.\n", customAtmos->customShaders[i]);
-				break;
+				CG_Printf("^1Custom atmosphere shader \"%s\" could not be registered.\n", customAtmos->customShaders[i]);
+				continue;
 			}
 
-			cg_atmFx.effectshaders[i] = shaderHandle;
 			cg_atmFx.numEffectShaders++;
-			i++;
+			cg_atmFx.effectshaders[i++] = shaderHandle;
 		}
 
 		if (!cg_atmFx.numEffectShaders)
@@ -1182,6 +1339,36 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 			// add some default
 			cg_atmFx.sizeMin[0] = cg_atmFx.sizeMin[1] = cg_atmFx.sizeMax[0] = cg_atmFx.sizeMax[1] = 4;
 		}
+
+		if (cg_atmFx.fadeStep != 0)
+		{
+			cg_atmFx._lifetimeFade = true;
+		}
+		
+		if (cg_atmFx.fadeInDist)
+		{
+			if (cg_atmFx.fadeInDist <= cg_atmFx.minDistance) 
+			{
+				CG_Printf("Invalid XFADEDIST fade in distance %i, must be more than min (%i)",
+					cg_atmFx.fadeInDist, cg_atmFx.minDistance);
+			}
+			else
+			{
+				cg_atmFx._distanceFade = true;
+			}
+		}
+		if (cg_atmFx.fadeOutDist)
+		{
+			if (cg_atmFx.fadeOutDist >= cg_atmFx.maxDistance)
+			{
+				CG_Printf("Invalid XFADEDIST fade out distance %i, must be less than max (%i)",
+					cg_atmFx.fadeOutDist, cg_atmFx.maxDistance);
+			}
+			else
+			{
+				cg_atmFx._distanceFade = true;
+			}
+		}
 	}
 	else
 	{
@@ -1191,7 +1378,7 @@ void CG_EffectParse(const char *effectstr, cg_customAtmosphere *customAtmos)
 	// Initialise atmospheric effect to prevent all particles falling at the start
 	for (count = 0; count < cg_atmFx.numDrops; count++)
 	{
-		cg_atmFx.particles[count].nextDropTime = ATMOSPHERIC_DROPDELAY + (rand() % ATMOSPHERIC_DROPDELAY);
+		cg_atmFx.particles[count].nextDropTime = ATMOSPHERIC_DROPDELAY + (int)(random() * ATMOSPHERIC_DROPDELAY);
 	}
 
 	CG_EffectGust();
