@@ -326,14 +326,13 @@ char *CG_AddSpawnVarToken(const char *string)
 
 cg_customAtmosphere CG_ParseCustomAtmos()
 {
-	char* s;
-	float f;
 	cg_customAtmosphere cfg{};
+	char* buffer;
 
 	std::string shaderKey = "customatmos_shader";
-	if (CG_SpawnString(shaderKey.c_str(), "", &s))
+	if (CG_SpawnString(shaderKey.c_str(), "", &buffer))
 	{
-		cfg.customShaders[0] = s;
+		cfg.customShaders[0] = buffer;
 		cfg.customShaderCount = 1;
 	}
 	else
@@ -342,12 +341,12 @@ cg_customAtmosphere CG_ParseCustomAtmos()
 
 		for (int i = 0; i < cg_customAtmosphere::maxShaders; i++)
 		{
-			if (!CG_SpawnString((shaderKey + std::to_string(i + 1)).c_str(), "", &s))
+			if (!CG_SpawnString((shaderKey + std::to_string(i + 1)).c_str(), "", &buffer))
 			{
 				break;
 			}
 
-			cfg.customShaders[i] = s;
+			cfg.customShaders[i] = buffer;
 			cfg.customShaderCount++;
 		}
 	}

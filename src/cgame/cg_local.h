@@ -2193,7 +2193,7 @@ struct range_t
 struct cg_customAtmosphere {
 	static const int maxShaders = 8;
 
-	char* customShaders[6]; // custom shaders to use for the particles
+	char* customShaders[maxShaders]; // custom shaders to use for the particles
 	int customShaderCount; // custom shader count
 };
 
