@@ -11,6 +11,7 @@
 #define ATM_NEW
 
 #include "cg_local.h"
+#include <random>
 
 #define MAX_ATMOSPHERIC_HEIGHT          MAX_MAP_SIZE    // maximum world height
 #define MIN_ATMOSPHERIC_HEIGHT          -MAX_MAP_SIZE   // minimum world height
@@ -58,6 +59,21 @@ static void CG_RenderPolyPool(void)
 	}
 }
 #endif // ATM_NEW
+
+static std::default_random_engine _generator;
+static std::normal_distribution<float> _normaldist(0.0, 1.0);
+
+static void VectorRandomNormalized(vec3_t vec)
+{
+	vec[0] = _normaldist(_generator);
+	vec[1] = _normaldist(_generator);
+	vec[2] = _normaldist(_generator);
+
+	if (vec[0] || vec[1] || vec[2])
+	{
+		VectorNormalizeFast(vec);
+	}
+}
 
 static void CG_AddPolyToPool(qhandle_t shader, const polyVert_t *verts)
 {
@@ -701,33 +717,28 @@ static void CG_SnowParticleRender(cg_atmosphericParticle_t *particle)
 
 static qboolean CG_CustomParticleGenerate(cg_atmosphericParticle_t* particle, vec3_t currvec, float currweight)
 {
-	// Attempt to 'spot' a snowflake somewhere below a sky texture.
+	float distance, groundHeight, skyHeight;
+	vec3_t position;
 
-	float angle, distance;
-	float groundHeight, skyHeight;
-
-	angle = random() * 2 * M_PI;
+	VectorRandomNormalized(position); // unit vector pointing in random direction
 	distance = cg_atmFx.minDistance + (cg_atmFx.maxDistance - cg_atmFx.minDistance) * random();
-
-	particle->pos[0] = cg.refdef_current->vieworg[0] + sin(angle) * distance;
-	particle->pos[1] = cg.refdef_current->vieworg[1] + cos(angle) * distance;
-
-	skyHeight = BG_GetSkyHeightAtPoint(particle->pos);
+	VectorScale(position, distance, particle->pos);
+	VectorAdd(particle->pos, cg.refdef_current->vieworg, particle->pos);
 
 	// out of map bounds
-	if (skyHeight == MAX_ATMOSPHERIC_HEIGHT)
+	skyHeight = BG_GetSkyHeightAtPoint(particle->pos);
+	if (skyHeight == MAX_ATMOSPHERIC_HEIGHT || skyHeight < particle->pos[2])
 	{
 		return qfalse;
 	}
+
+	// under ground or too low
 	groundHeight = BG_GetSkyGroundHeightAtPoint(particle->pos);
-	if (groundHeight >= skyHeight)
+	if (groundHeight >= skyHeight || groundHeight > particle->pos[2])
 	{
 		return qfalse;
 	}
 	
-	// TODO: bias for spawn height calculation?
-	particle->pos[2] = groundHeight + random() * (skyHeight - groundHeight);
-
 	if (cg_atmFx.baseHeightOffset > 0)
 	{
 		if (particle->pos[2] - cg.refdef_current->vieworg[2] > cg_atmFx.baseHeightOffset)
@@ -783,7 +794,7 @@ static qboolean CG_CustomParticleCheckVisible(cg_atmosphericParticle_t* particle
 {
 	// Check the particle is visible and still going, wrapping if necessary.
 	float  moved;
-	vec2_t distance;
+	vec3_t distance;
 
 	if (!particle || particle->active == ACT_NOT)
 	{
@@ -793,9 +804,12 @@ static qboolean CG_CustomParticleCheckVisible(cg_atmosphericParticle_t* particle
 	moved = (cg.time - cg_atmFx.lastRainTime) * 0.001;  // Units moved since last frame
 	VectorMA(particle->pos, moved, particle->delta, particle->pos);
 
-	distance[0] = particle->pos[0] - cg.refdef_current->vieworg[0];
-	distance[1] = particle->pos[1] - cg.refdef_current->vieworg[1];
-	if ((distance[0] * distance[0] + distance[1] * distance[1]) > Square(cg_atmFx.maxDistance))
+	VectorSubtract(particle->pos, cg.refdef_current->vieworg, distance);
+
+	auto vectorLen = VectorLengthSquared(distance);
+	auto distSquared = Square(cg_atmFx.maxDistance);
+
+	if ((distance[0] * distance[0] + distance[1] * distance[1] + distance[2] * distance[2]) > Square(cg_atmFx.maxDistance))
 	{
 		return CG_SetParticleActive(particle, ACT_NOT);
 	}
