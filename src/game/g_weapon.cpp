@@ -3585,9 +3585,6 @@ void Weapon_Portal_Fire(gentity_t *ent, int portalNumber) {
   vec3_t t_portalAngles; // Could be used for all angles conversions...
   float P_DEPTH, P_HEIGHT, P_WIDTH;
 
-  vec3_t blueTrail = {0.0f, 0.0f, 1.0f};
-  vec3_t redTrail = {1.0f, 0.0f, 0.0f};
-
   // NOTE: NEW trace setup.... pulled from flamethrower
   // NOTE: Need this for +attack2 call...
   AngleVectors(ent->client->ps.viewangles, forward, right, up);
@@ -3686,8 +3683,7 @@ void Weapon_Portal_Fire(gentity_t *ent, int portalNumber) {
   // close enough for the barrel on most cases, realistically we should
   // grab the starting point from the weapon tags
   tent = G_TempEntity(muzzleEffect, EV_PORTAL_TRAIL);
-  portalNumber == 1 ? VectorCopy(blueTrail, tent->s.angles)
-                    : VectorCopy(redTrail, tent->s.angles);
+  tent->s.eventParm = portalNumber;
 
   SnapVectorTowards(tr_end, start);
   VectorCopy(tr_end, tent->s.origin2);

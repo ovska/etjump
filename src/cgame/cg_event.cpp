@@ -4,6 +4,7 @@
 #include "etj_entity_events_handler.h"
 #include <algorithm>
 #include "etj_player_events_handler.h"
+#include "etj_demo_compatibility.h"
 
 extern void CG_StartShakeCamera(float param, entityState_t *es);
 extern void CG_Tracer(vec3_t source, vec3_t dest, int sparks);
@@ -2832,9 +2833,29 @@ void CG_EntityEvent(centity_t *cent, vec3_t position) {
         return;
       }
 
+      vec3_t trailColor;
+
+      static bool fixedTrailColors =
+          ETJump::demoCompatibility->isCompatible({3, 2, 0});
+
+      if (cg.demoPlayback && !fixedTrailColors) {
+        VectorCopy(es->angles, trailColor);
+      } else if (es->otherEntityNum2 != cg.clientNum) { // other player
+        if (es->eventParm == 1) {
+          VectorCopy(tv(0, 1, 0), trailColor); // green
+        } else {
+          VectorCopy(tv(1, 1, 0), trailColor); // yellow
+        }
+      } else {
+        if (es->eventParm == 1) { // self or spectated player
+          VectorCopy(tv(0, 0, 1), trailColor); // blue
+        } else {
+          VectorCopy(tv(1, 0, 0), trailColor); // red
+        }
+      }
+
       CG_RailTrail(&cgs.clientinfo[es->otherEntityNum2], es->origin2,
-                   es->pos.trBase, es->dmgFlags,
-                   tv(es->angles[0], es->angles[1], es->angles[2]));
+                   es->pos.trBase, es->dmgFlags, trailColor);
       break;
     default:
       DEBUGNAME("UNKNOWN");
