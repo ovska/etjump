@@ -1277,6 +1277,7 @@ typedef enum {
   EV_UPHILLSTEP,
   EV_PORTAL_TRAIL,
   EV_CUSHIONFALLSTEP,
+  EV_PORTALGUN_FIRE,
   EV_MAX_EVENTS // just added as an 'endcap'
 } entity_event_t;
 
@@ -2806,6 +2807,13 @@ enum class CheatCvarFlags {
   None = 0,
   LookYaw = 1,
   PmoveFPS = 2,
+};
+
+enum class PortalFireFlags {
+  None = 0,
+  RedPortal = 1 << 0, // if this bit is not set, blue portal was shot
+  Success = 1 << 1, // portal was spawned
+  PortalClip = 1 << 2, // trace hit CONTENTS_PORTALCLIP
 };
 }
 

@@ -2857,6 +2857,37 @@ void CG_EntityEvent(centity_t *cent, vec3_t position) {
       CG_RailTrail(&cgs.clientinfo[es->otherEntityNum2], es->origin2,
                    es->pos.trBase, es->dmgFlags, trailColor);
       break;
+    case EV_PORTALGUN_FIRE:
+      if (es->clientNum != cg.snap->ps.clientNum) {
+        return;
+      }
+
+      DEBUGNAME("EV_PORTALGUN_FIRE");
+
+      sfxHandle_t soundToPlay;
+
+      if (es->eventParm &
+          static_cast<int>(ETJump::PortalFireFlags::PortalClip)) {
+        soundToPlay = cgs.media.sndPgClip;
+      } else if (es->eventParm &
+                 static_cast<int>(ETJump::PortalFireFlags::Success)) {
+        if (es->eventParm &
+            static_cast<int>(ETJump::PortalFireFlags::RedPortal)) {
+          soundToPlay = cgs.media.sndPgRed;
+        } else {
+          soundToPlay = cgs.media.sndPgBlue;
+        }
+      } else {
+        soundToPlay = 0;
+      }
+
+      if (soundToPlay) {
+        trap_S_StartSoundVControl(
+            nullptr, es->number, CHAN_AUTO, soundToPlay,
+            static_cast<int>(255 * etj_weaponVolume.value));
+      }
+
+      break;
     default:
       DEBUGNAME("UNKNOWN");
       break;

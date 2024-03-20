@@ -3609,8 +3609,17 @@ void Weapon_Portal_Fire(gentity_t *ent, int portalNumber) {
     return;
   }
 
+  // event for portalgun fire effects, skip if noimpact or trace missed
+  gentity_t *fireEnt = G_TempEntity(ent->r.currentOrigin, EV_PORTALGUN_FIRE);
+  fireEnt->s.clientNum = ClientNum(ent);
+
+  if (portalNumber != 1) {
+    fireEnt->s.eventParm |= static_cast<int>(ETJump::PortalFireFlags::RedPortal);
+  }
+
   // emancipation grid
   if (tr.contents & CONTENTS_PORTALCLIP) {
+    fireEnt->s.eventParm |= static_cast<int>(ETJump::PortalFireFlags::PortalClip);
     return;
   }
 
@@ -3666,6 +3675,8 @@ void Weapon_Portal_Fire(gentity_t *ent, int portalNumber) {
       }
     }
   }
+
+  fireEnt->s.eventParm |= static_cast<int>(ETJump::PortalFireFlags::Success);
 
   // Free any previous instances of each portal if any
   if (portalNumber == 1 && ent->portalBlue) {

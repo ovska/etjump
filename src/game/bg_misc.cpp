@@ -4044,6 +4044,7 @@ const char *eventnames[] = {
     "EV_UPHILLSTEP",
     "EV_SAVE",
     "EV_CUSHIONFALLSTEP",
+    "EV_PORTALGUN_FIRE",
     "EV_MAX_EVENTS",
 };
 
