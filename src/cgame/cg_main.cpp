@@ -2077,6 +2077,12 @@ static void CG_RegisterSounds(void) {
   cgs.media.sndPgBlue = trap_S_RegisterSound("sound/menu/select.wav", qfalse);
   cgs.media.sndPgRed = trap_S_RegisterSound("sound/menu/focus.wav", qfalse);
 
+  cgs.media.sndPgTele[0] = trap_S_RegisterSound("sound/weapons/portalgun/tele0.wav", qfalse);
+  cgs.media.sndPgTele[1] = trap_S_RegisterSound("sound/weapons/portalgun/tele1.wav", qfalse);
+  cgs.media.sndPgTele[2] = trap_S_RegisterSound("sound/weapons/portalgun/tele2.wav", qfalse);
+  cgs.media.sndPgTele[3] = trap_S_RegisterSound("sound/weapons/portalgun/tele3.wav", qfalse);
+  cgs.media.sndPgTele[4] = trap_S_RegisterSound("sound/weapons/portalgun/tele4.wav", qfalse);
+
   // FIXME: send as a special event
   trap_S_RegisterSound("sound/weapons/artillery/artillery_fly_1.wav", qfalse);
   trap_S_RegisterSound("sound/weapons/artillery/artillery_fly_2.wav", qfalse);

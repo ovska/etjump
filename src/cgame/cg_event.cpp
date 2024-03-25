@@ -2801,10 +2801,41 @@ void CG_EntityEvent(centity_t *cent, vec3_t position) {
 
       break;
 
-    case EV_PORTAL_TELEPORT:
-      DEBUGNAME("EV_PORTAL_TELEPORT");
-      break;
+      case EV_PORTAL_TELEPORT: {
+        if (es->clientNum != cg.snap->ps.clientNum) {
+          return;
+        }
 
+        DEBUGNAME("EV_PORTAL_TELEPORT");
+
+        sfxHandle_t sound;
+
+        const float outSpeed = VectorLength(cg.snap->ps.velocity);
+
+        if (outSpeed <= 700.0f) {
+          sound = cgs.media.sndPgTele[0];
+        }
+        else if (outSpeed <= 900.0f) {
+          sound = cgs.media.sndPgTele[1];
+        }
+        else if (outSpeed <= 1200.0f) {
+          sound = cgs.media.sndPgTele[2];
+        }
+        else if (outSpeed <= 1500.0f) {
+          sound = cgs.media.sndPgTele[3];
+        }
+        else {
+          sound = cgs.media.sndPgTele[4];
+        }
+
+        if (sound) {
+          trap_S_StartSoundVControl(
+            nullptr, es->number, CHAN_AUTO, sound,
+            static_cast<int>(255 * etj_weaponVolume.value));
+        }
+
+        break;
+      }
     case EV_LOAD_TELEPORT:
       if (es->clientNum != cg.snap->ps.clientNum) {
         return;

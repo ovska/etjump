@@ -1700,6 +1700,7 @@ typedef struct {
   sfxHandle_t sndPgClip;
   sfxHandle_t sndPgBlue;
   sfxHandle_t sndPgRed;
+  sfxHandle_t sndPgTele[5];
 
   qhandle_t ccStamps[2];
   qhandle_t ccFilterPics[10];
