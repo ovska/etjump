@@ -247,11 +247,13 @@ void init() {
   ETJump::renderables.push_back(std::make_shared<AreaIndicator>());
 
   if (etj_CGazOnTop.integer) {
-    ETJump::renderables.push_back(std::make_shared<Snaphud>());
+    ETJump::renderables.push_back(std::make_shared<Snaphud>(ETJump::Snaphud::create(false)));
+    ETJump::renderables.push_back(std::make_shared<Snaphud>(ETJump::Snaphud::create(true)));
     ETJump::renderables.push_back(std::make_shared<CGaz>());
   } else {
     ETJump::renderables.push_back(std::make_shared<CGaz>());
-    ETJump::renderables.push_back(std::make_shared<Snaphud>());
+    ETJump::renderables.push_back(std::make_shared<Snaphud>(ETJump::Snaphud::create(false)));
+    ETJump::renderables.push_back(std::make_shared<Snaphud>(ETJump::Snaphud::create(true)));
   }
 
   ETJump::renderables.push_back(std::make_shared<UpperRight>());

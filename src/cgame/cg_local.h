@@ -2697,6 +2697,19 @@ extern vmCvar_t etj_snapHUDTrueness;
 extern vmCvar_t etj_snapHUDEdgeThickness;
 extern vmCvar_t etj_snapHUDActiveIsPrimary;
 
+extern vmCvar_t etj_drawAltSnapHUD;
+extern vmCvar_t etj_altSnapHUDOffsetY;
+extern vmCvar_t etj_altSnapHUDHeight;
+extern vmCvar_t etj_altSnapHUDColor1;
+extern vmCvar_t etj_altSnapHUDColor2;
+extern vmCvar_t etj_altSnapHUDHLColor1;
+extern vmCvar_t etj_altSnapHUDHLColor2;
+extern vmCvar_t etj_altSnapHUDFov;
+extern vmCvar_t etj_altSnapHUDHLActive;
+extern vmCvar_t etj_altSnapHUDTrueness;
+extern vmCvar_t etj_altSnapHUDEdgeThickness;
+extern vmCvar_t etj_altSnapHUDActiveIsPrimary;
+
 extern vmCvar_t etj_gunSway;
 extern vmCvar_t etj_drawScoreboardInactivity;
 extern vmCvar_t etj_drawBanners;

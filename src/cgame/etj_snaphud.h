@@ -31,6 +31,21 @@
 namespace ETJump {
 class Snaphud : public IRenderable {
 public:
+  struct SnapCvars {
+    vmCvar_t *enabled;
+    vmCvar_t *offsetY;
+    vmCvar_t *height;
+    vmCvar_t *color1;
+    vmCvar_t *color2;
+    vmCvar_t *hlColor1;
+    vmCvar_t *hlColor2;
+    vmCvar_t *fov;
+    vmCvar_t *hlActive;
+    vmCvar_t *trueness;
+    vmCvar_t *edgeThickness;
+    vmCvar_t *activeIsPrimary;
+  };
+
   static constexpr float INVALID_SNAP_DIR = -9999;
   struct CurrentSnap {
     float snap; // next snap in strafe dir, INVALID_SNAP_DIR if not available
@@ -39,13 +54,16 @@ public:
     bool rightStrafe; // whether turning right
   };
 
-  void render() const override;
-  bool beforeRender() override;
   static CurrentSnap getCurrentSnap(const playerState_t &ps, pmove_t *pm,
                                     bool upmoveTrueness);
   static bool inMainAccelZone(const playerState_t &ps, pmove_t *pm);
 
-  Snaphud();
+  static Snaphud create(bool alt = false);
+
+  void render() const override;
+  bool beforeRender() override;
+
+  Snaphud(SnapCvars cvars);
   ~Snaphud(){};
 
 private:
@@ -69,6 +87,7 @@ private:
     float maxAbsAccel;
   };
 
+  SnapCvars cfg;
   snaphud_t snap;
 
   int yaw{};

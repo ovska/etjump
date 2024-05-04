@@ -592,6 +592,19 @@ vmCvar_t etj_snapHUDTrueness;
 vmCvar_t etj_snapHUDEdgeThickness;
 vmCvar_t etj_snapHUDActiveIsPrimary;
 
+vmCvar_t etj_drawAltSnapHUD;
+vmCvar_t etj_altSnapHUDOffsetY;
+vmCvar_t etj_altSnapHUDHeight;
+vmCvar_t etj_altSnapHUDColor1;
+vmCvar_t etj_altSnapHUDColor2;
+vmCvar_t etj_altSnapHUDHLColor1;
+vmCvar_t etj_altSnapHUDHLColor2;
+vmCvar_t etj_altSnapHUDFov;
+vmCvar_t etj_altSnapHUDHLActive;
+vmCvar_t etj_altSnapHUDTrueness;
+vmCvar_t etj_altSnapHUDEdgeThickness;
+vmCvar_t etj_altSnapHUDActiveIsPrimary;
+
 vmCvar_t etj_gunSway;
 vmCvar_t etj_drawScoreboardInactivity;
 vmCvar_t etj_drawBanners;
@@ -1135,18 +1148,27 @@ cvarTable_t cvarTable[] = {
     {&etj_snapHUDOffsetY, "etj_snapHUDOffsetY", "0", CVAR_ARCHIVE},
     {&etj_snapHUDHeight, "etj_snapHUDHeight", "10", CVAR_ARCHIVE},
     {&etj_snapHUDColor1, "etj_snapHUDColor1", "0.0 1.0 1.0 0.75", CVAR_ARCHIVE},
-    {&etj_snapHUDColor2, "etj_snapHUDColor2", "0.05 0.05 0.05 0.1",
-     CVAR_ARCHIVE},
-    {&etj_snapHUDHLColor1, "etj_snapHUDHLColor1", "1.0 0.5 1.0 0.75",
-     CVAR_ARCHIVE},
-    {&etj_snapHUDHLColor2, "etj_snapHUDHLColor2", "1.0 0.5 1.0 0.1",
-     CVAR_ARCHIVE},
+    {&etj_snapHUDColor2, "etj_snapHUDColor2", "0.05 0.05 0.05 0.1",     CVAR_ARCHIVE},
+    {&etj_snapHUDHLColor1, "etj_snapHUDHLColor1", "1.0 0.5 1.0 0.75",     CVAR_ARCHIVE},
+    {&etj_snapHUDHLColor2, "etj_snapHUDHLColor2", "1.0 0.5 1.0 0.1",     CVAR_ARCHIVE},
     {&etj_snapHUDFov, "etj_snapHUDFov", "0", CVAR_ARCHIVE},
     {&etj_snapHUDHLActive, "etj_snapHUDHLActive", "0", CVAR_ARCHIVE},
     {&etj_snapHUDTrueness, "etj_snapHUDTrueness", "0", CVAR_ARCHIVE},
     {&etj_snapHUDEdgeThickness, "etj_snapHUDEdgeThickness", "10", CVAR_ARCHIVE},
-    {&etj_snapHUDActiveIsPrimary, "etj_snapHUDActiveIsPrimary", "0",
-     CVAR_ARCHIVE},
+    {&etj_snapHUDActiveIsPrimary, "etj_snapHUDActiveIsPrimary", "0",     CVAR_ARCHIVE},
+    // alt snaphud
+    {&etj_drawAltSnapHUD, "etj_drawAltSnapHUD", "0", CVAR_ARCHIVE},
+    {&etj_altSnapHUDOffsetY, "etj_altSnapHUDOffsetY", "-5", CVAR_ARCHIVE},
+    {&etj_altSnapHUDHeight, "etj_altSnapHUDHeight", "5", CVAR_ARCHIVE},
+    {&etj_altSnapHUDColor1, "etj_altSnapHUDColor1", "0.0 1.0 1.0 0.75", CVAR_ARCHIVE},
+    {&etj_altSnapHUDColor2, "etj_altSnapHUDColor2", "0.05 0.05 0.05 0.1",     CVAR_ARCHIVE},
+    {&etj_altSnapHUDHLColor1, "etj_altSnapHUDHLColor1", "1.0 0.5 1.0 0.75",     CVAR_ARCHIVE},
+    {&etj_altSnapHUDHLColor2, "etj_altSnapHUDHLColor2", "1.0 0.5 1.0 0.1",     CVAR_ARCHIVE},
+    {&etj_altSnapHUDFov, "etj_altSnapHUDFov", "60", CVAR_ARCHIVE},
+    {&etj_altSnapHUDHLActive, "etj_altSnapHUDHLActive", "0", CVAR_ARCHIVE},
+    {&etj_altSnapHUDTrueness, "etj_altSnapHUDTrueness", "0", CVAR_ARCHIVE},
+    {&etj_altSnapHUDEdgeThickness, "etj_altSnapHUDEdgeThickness", "10", CVAR_ARCHIVE},
+    {&etj_altSnapHUDActiveIsPrimary, "etj_altSnapHUDActiveIsPrimary", "0",     CVAR_ARCHIVE},
 
     {&etj_gunSway, "etj_gunSway", "1", CVAR_ARCHIVE},
     {&etj_drawScoreboardInactivity, "etj_drawScoreboardInactivity", "1",

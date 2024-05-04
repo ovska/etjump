@@ -34,31 +34,33 @@
 // https://github.com/Jelvan1/cgame_proxymod/
 
 namespace ETJump {
-Snaphud::Snaphud() {
-  parseColorString(etj_snapHUDColor1.string, snaphudColors[0]);
-  parseColorString(etj_snapHUDColor2.string, snaphudColors[1]);
+Snaphud::Snaphud(SnapCvars cvars) {
+  cfg = cvars;
+
+  parseColorString(cfg.color1->string, snaphudColors[0]);
+  parseColorString(cfg.color2->string, snaphudColors[1]);
 
   // always parse the highlighting colors on init to make sure they are
   // initialized even in cases where client connects to server with
   // highlighting disabled
-  parseColorString(etj_snapHUDHLColor1.string, snaphudColors[2]);
-  parseColorString(etj_snapHUDHLColor2.string, snaphudColors[3]);
+  parseColorString(cfg.hlColor1->string, snaphudColors[2]);
+  parseColorString(cfg.hlColor2->string, snaphudColors[3]);
 
   startListeners();
 }
 
 void Snaphud::startListeners() {
-  cvarUpdateHandler->subscribe(&etj_snapHUDColor1, [&](const vmCvar_t *cvar) {
-    parseColorString(etj_snapHUDColor1.string, snaphudColors[0]);
+  cvarUpdateHandler->subscribe(cfg.color1, [&](const vmCvar_t *cvar) {
+    parseColorString(cfg.color1->string, snaphudColors[0]);
   });
-  cvarUpdateHandler->subscribe(&etj_snapHUDColor2, [&](const vmCvar_t *cvar) {
-    parseColorString(etj_snapHUDColor2.string, snaphudColors[1]);
+  cvarUpdateHandler->subscribe(cfg.color2, [&](const vmCvar_t *cvar) {
+    parseColorString(cfg.color2->string, snaphudColors[1]);
   });
-  cvarUpdateHandler->subscribe(&etj_snapHUDHLColor1, [&](const vmCvar_t *cvar) {
-    parseColorString(etj_snapHUDHLColor1.string, snaphudColors[2]);
+  cvarUpdateHandler->subscribe(cfg.hlColor1, [&](const vmCvar_t *cvar) {
+    parseColorString(cfg.hlColor1->string, snaphudColors[2]);
   });
-  cvarUpdateHandler->subscribe(&etj_snapHUDHLColor2, [&](const vmCvar_t *cvar) {
-    parseColorString(etj_snapHUDHLColor2.string, snaphudColors[3]);
+  cvarUpdateHandler->subscribe(cfg.hlColor2, [&](const vmCvar_t *cvar) {
+    parseColorString(cfg.hlColor2->string, snaphudColors[3]);
   });
 }
 
@@ -250,7 +252,7 @@ bool Snaphud::beforeRender() {
   }
 
   // show upmove influence?
-  float scale = etj_snapHUDTrueness.integer &
+  float scale = cfg.trueness->integer &
                         static_cast<int>(SnapTrueness::SNAP_JUMPCROUCH)
                     ? pm->pmext->scale
                     : pm->pmext->scaleAlt;
@@ -269,7 +271,7 @@ bool Snaphud::beforeRender() {
   InitSnaphud(wishvel, uCmdScale, cmd);
 
   // show true groundzones?
-  float accel = (etj_snapHUDTrueness.integer &
+  float accel = (cfg.trueness->integer &
                  static_cast<int>(SnapTrueness::SNAP_GROUND))
                     ? pm->pmext->accel
                     : pm_airaccelerate;
@@ -288,8 +290,8 @@ bool Snaphud::beforeRender() {
     UpdateSnapState();
   }
 
-  edgesOnly = etj_drawSnapHUD.integer == 2;
-  edgeThickness = Numeric::clamp(etj_snapHUDEdgeThickness.integer, 1, 128);
+  edgesOnly = cfg.enabled->integer == 2;
+  edgeThickness = Numeric::clamp(cfg.edgeThickness->integer, 1, 128);
 
   PrepareDrawables();
 
@@ -315,35 +317,35 @@ void Snaphud::PrepareDrawables() {
 }
 
 void Snaphud::render() const {
-  float h = etj_snapHUDHeight.value;
-  float y = 240 + etj_snapHUDOffsetY.value;
+  float h = cfg.height->value;
+  float y = 240 + cfg.offsetY->value;
 
   float fov;
-  if (!etj_snapHUDFov.value) {
+  if (!cfg.fov->value) {
     fov = cg.refdef.fov_x;
   } else {
-    fov = Numeric::clamp(etj_snapHUDFov.value, 1, 179);
+    fov = Numeric::clamp(cfg.fov->value, 1, 179);
   }
 
   for (const DrawableSnap &ds : drawableSnaps) {
     int8_t color = ds.alt ? 1 : 0;
 
-    if (etj_snapHUDActiveIsPrimary.integer && isCurrentAlt) {
+    if (cfg.activeIsPrimary->integer && isCurrentAlt) {
       color ^= 1;
     }
 
-    if (etj_snapHUDHLActive.integer && ds.active) {
+    if (cfg.hlActive->integer && ds.active) {
       color += 2;
     }
 
     if (edgesOnly) {
       CG_FillAngleYaw(SHORT2RAD(ds.bSnap), SHORT2RAD(ds.bSnap + edgeThickness),
-                      SHORT2RAD(yaw), y, h, fov, snaphudColors[color]);
+        SHORT2RAD(yaw), y, h, fov, snaphudColors[color]);
       CG_FillAngleYaw(SHORT2RAD(ds.eSnap), SHORT2RAD(ds.eSnap - edgeThickness),
-                      SHORT2RAD(yaw), y, h, fov, snaphudColors[color]);
+        SHORT2RAD(yaw), y, h, fov, snaphudColors[color]);
     } else {
       CG_FillAngleYaw(SHORT2RAD(ds.bSnap), SHORT2RAD(ds.eSnap), SHORT2RAD(yaw),
-                      y, h, fov, snaphudColors[color]);
+        y, h, fov, snaphudColors[color]);
     }
   }
 }
@@ -351,7 +353,7 @@ void Snaphud::render() const {
 Snaphud::CurrentSnap Snaphud::getCurrentSnap(const playerState_t &ps,
                                              pmove_t *pm,
                                              const bool upmoveTrueness) {
-  static Snaphud s;
+  static Snaphud s = create(false);
   CurrentSnap cs{};
 
   // get player yaw
@@ -471,7 +473,7 @@ bool Snaphud::inMainAccelZone(const playerState_t &ps, pmove_t *pm) {
 }
 
 bool Snaphud::canSkipDraw() const {
-  if (!etj_drawSnapHUD.integer) {
+  if (!cfg.enabled->integer) {
     return true;
   }
 
@@ -494,5 +496,22 @@ bool Snaphud::canSkipDraw() const {
   }
 
   return false;
+}
+
+ETJump::Snaphud Snaphud::create(bool alt) {
+  SnapCvars v{};
+  v.enabled = !alt ? &etj_drawSnapHUD : &etj_drawAltSnapHUD;
+  v.offsetY = !alt ? &etj_snapHUDOffsetY : &etj_altSnapHUDOffsetY;
+  v.height = !alt ? &etj_snapHUDHeight : &etj_altSnapHUDHeight;
+  v.color1 = !alt ? &etj_snapHUDColor1 : &etj_altSnapHUDColor1;
+  v.color2 = !alt ? &etj_snapHUDColor2 : &etj_altSnapHUDColor2;
+  v.hlColor1 = !alt ? &etj_snapHUDHLColor1 : &etj_altSnapHUDHLColor1;
+  v.hlColor2 = !alt ? &etj_snapHUDHLColor2 : &etj_altSnapHUDHLColor2;
+  v.fov = !alt ? &etj_snapHUDFov : &etj_altSnapHUDFov;
+  v.hlActive = !alt ? &etj_snapHUDHLActive : &etj_altSnapHUDHLActive;
+  v.trueness = !alt ? &etj_snapHUDTrueness : &etj_altSnapHUDTrueness;
+  v.edgeThickness = !alt ? &etj_snapHUDEdgeThickness : &etj_altSnapHUDEdgeThickness;
+  v.activeIsPrimary = !alt ? &etj_snapHUDActiveIsPrimary : &etj_altSnapHUDActiveIsPrimary;
+  return ETJump::Snaphud(v);
 }
 } // namespace ETJump
