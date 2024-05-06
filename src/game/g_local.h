@@ -971,6 +971,7 @@ typedef struct {
 
   int hideMe;
   float noclipScale;
+  bool forceOverbounce;
 
   qboolean enableTimeruns;
 

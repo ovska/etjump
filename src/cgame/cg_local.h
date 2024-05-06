@@ -2765,6 +2765,8 @@ extern vmCvar_t etj_autoPortalBinds;
 
 extern vmCvar_t etj_muzzleFlash;
 
+extern vmCvar_t etj_forceOverbounce;
+
 //
 // cg_main.c
 //

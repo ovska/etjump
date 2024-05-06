@@ -6385,6 +6385,10 @@ void PmoveSingle(pmove_t *pmove) {
   } else if (!(pm->ps->eFlags & EF_MOUNTEDTANK)) {
     // airborne
     PM_AirMove();
+
+    if (pm->pmext->forcedOverbounceTime < pm->cmd.serverTime) {
+      pm->pmext->lastFrameAirmove = true;
+    }
   }
 
   if (pm->ps->eFlags & EF_MOUNTEDTANK) {

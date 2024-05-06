@@ -32,6 +32,10 @@ bool Overbounce::isOverbounce(float zVel, float startHeight, float endHeight,
   float reachedHeight;
   int timeSteps;
 
+  if (etj_forceOverbounce.integer > 0) {
+    return true;
+  }
+
   a = -pmoveSec * zVelSnapped / 2;
   b = pmoveSec *
       (zVel - static_cast<float>(gravity) * pmoveSec / 2 + zVelSnapped / 2);

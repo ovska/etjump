@@ -356,8 +356,17 @@ void PM_StepSlideMove(qboolean gravity) {
     VectorCopy(trace.endpos, pm->ps->origin);
   }
   if (trace.fraction < 1.0) {
-    PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity,
-                    OVERCLIP);
+    if (pm->pmext->forceOverbounce && pm->pmext->lastFrameAirmove) {
+      pm->pmext->lastFrameAirmove = false;
+      pm->pmext->forcedOverbounceTime = pm->cmd.serverTime;
+
+      if (pm->debugLevel) {
+        Com_Printf("Prevented clipvelocity (z: %f)\n", pm->ps->velocity[2]);
+      }
+    } else {
+      PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity,
+                      OVERCLIP);
+    }
   }
 
 #if 0

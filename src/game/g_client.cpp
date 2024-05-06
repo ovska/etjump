@@ -1888,8 +1888,8 @@ void ClientUserinfoChanged(int clientNum) {
   client->pers.quickFollow =
       (client->pers.clientFlags & CGF_QUICK_FOLLOW) != 0 ? qtrue : qfalse;
   client->pers.snaphud = (client->pers.clientFlags & CGF_SNAPHUD) != 0;
-  client->pers.noPanzerAutoswitch =
-      (client->pers.clientFlags & CGF_NOPANZERSWITCH) != 0;
+  client->pers.noPanzerAutoswitch = (client->pers.clientFlags & CGF_NOPANZERSWITCH) != 0;
+  client->pers.forceOverbounce = (client->pers.clientFlags & CGF_FORCEOVERBOUNCE) != 0;
 
   // set name
   Q_strncpyz(oldname, client->pers.netname, sizeof(oldname));

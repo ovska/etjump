@@ -662,6 +662,8 @@ vmCvar_t etj_autoPortalBinds;
 
 vmCvar_t etj_muzzleFlash;
 
+vmCvar_t etj_forceOverbounce;
+
 typedef struct {
   vmCvar_t *vmCvar;
   const char *cvarName;
@@ -1231,6 +1233,8 @@ cvarTable_t cvarTable[] = {
     {&etj_autoPortalBinds, "etj_autoPortalBinds", "1", CVAR_ARCHIVE},
 
     {&etj_muzzleFlash, "etj_muzzleFlash", "1", CVAR_ARCHIVE},
+
+    {&etj_forceOverbounce, "etj_forceOverbounce", "0", CVAR_ARCHIVE | CVAR_CHEAT },
 };
 
 int cvarTableSize = sizeof(cvarTable) / sizeof(cvarTable[0]);
@@ -1309,7 +1313,8 @@ void CG_UpdateCvars(void) {
             cv->vmCvar == &etj_touchPickupWeapons ||
             cv->vmCvar == &etj_autoLoad || cv->vmCvar == &etj_quickFollow ||
             cv->vmCvar == &etj_drawSnapHUD ||
-            cv->vmCvar == &etj_noPanzerAutoswitch) {
+            cv->vmCvar == &etj_noPanzerAutoswitch ||
+            cv->vmCvar == &etj_forceOverbounce) {
           fSetFlags = qtrue;
         } else if (cv->vmCvar == &cg_rconPassword && *cg_rconPassword.string) {
           trap_SendConsoleCommand(va("rconAuth %s\n", cg_rconPassword.string));
@@ -1371,7 +1376,8 @@ void CG_setClientFlags(void) {
           ((etj_autoLoad.integer > 0) ? CGF_AUTO_LOAD : 0) |
           ((etj_quickFollow.integer > 0) ? CGF_QUICK_FOLLOW : 0) |
           ((etj_drawSnapHUD.integer > 0) ? CGF_SNAPHUD : 0) |
-          ((etj_noPanzerAutoswitch.integer > 0) ? CGF_NOPANZERSWITCH : 0)
+          ((etj_noPanzerAutoswitch.integer > 0) ? CGF_NOPANZERSWITCH : 0) |
+          ((etj_forceOverbounce.integer > 0) ? CGF_FORCEOVERBOUNCE : 0)
           // Add more in here, as needed
           ),
 

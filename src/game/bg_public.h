@@ -371,6 +371,7 @@ extern const unsigned int aReinfSeeds[MAX_REINFSEEDS];
 #define CGF_QUICK_FOLLOW 0x1000
 #define CGF_SNAPHUD 0x2000
 #define CGF_NOPANZERSWITCH 0x4000
+#define CGF_FORCEOVERBOUNCE (0x8000)
 
 #define MAX_MOTDLINES 6
 
@@ -597,6 +598,10 @@ typedef struct {
   qboolean releasedFire;
   float noclipScale;
   bool isJumpLand;
+
+  bool forceOverbounce;
+  bool lastFrameAirmove;
+  int forcedOverbounceTime;
 
   // ETJump: exported values from pmove_t & pml_t for cgame drawing
   int tracemask;

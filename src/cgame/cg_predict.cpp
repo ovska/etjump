@@ -970,6 +970,8 @@ void CG_PredictPlayerState() {
     cg.pmext.noclipScale = etj_noclipScale.value;
   }
 
+  cg.pmext.forceOverbounce = etj_forceOverbounce.integer > 0;
+
   memcpy(&oldpmext[current & CMD_MASK], &cg.pmext, sizeof(pmoveExt_t));
 
   // if we don't have the commands right after the snapshot, we
